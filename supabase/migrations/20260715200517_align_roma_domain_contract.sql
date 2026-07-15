@@ -1,0 +1,1 @@
+-- Remote history placeholder. The equivalent schema is defined in 0002.

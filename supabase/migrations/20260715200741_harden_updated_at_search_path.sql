@@ -1,0 +1,1 @@
+-- Remote history placeholder. The final function definition is captured by the production schema pull.

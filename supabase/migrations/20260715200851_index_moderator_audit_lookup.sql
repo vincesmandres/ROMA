@@ -1,0 +1,1 @@
+-- Remote history placeholder. The final index set is captured by the production schema pull.

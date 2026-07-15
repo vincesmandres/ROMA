@@ -184,8 +184,7 @@ export async function persistTelegramReport(report: TelegramReport): Promise<Tel
       Prefer: "return=representation",
     },
     body: JSON.stringify({
-      // Production still has the legacy web/whatsapp source constraint.
-      source: "whatsapp",
+      source: "telegram",
       title: report.description.slice(0, 160),
       description: redactedText,
       zone: report.zone,
@@ -194,7 +193,6 @@ export async function persistTelegramReport(report: TelegramReport): Promise<Tel
       priority: report.urgency ?? null,
       status: "pending",
       summary: redactedText.slice(0, 500),
-      whatsapp_message: "source:telegram",
       confidence: report.confidence ?? null,
       report_hash: reportHash,
       created_at: createdAt,
