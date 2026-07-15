@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ROMA | Inteligencia cívica",
-  description: "Centro privado de observación y moderación de señales ciudadanas para Manta.",
+  title: "ROMA | Centro de Observación",
+  description: "Inteligencia cívica privada y trazable para Manta.",
 };
 
 export default function RootLayout({
@@ -24,8 +24,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full bg-background antialiased`}
+      lang="es"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
