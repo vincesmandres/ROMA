@@ -22,16 +22,19 @@ export type ReportRow = {
   reference_code: string;
   title: string;
   category: string;
-  priority: "critical" | "high" | "medium" | "low";
+  priority: "critica" | "alta" | "media" | "baja";
   status: "pending" | "in_review" | "escalated" | "resolved";
   zone: string;
   latitude: number | null;
   longitude: number | null;
   source: "web" | "whatsapp";
   created_at: string;
+  summary: string | null;
+  risks: unknown;
+  confidence: number | null;
   report_analysis: Array<{
     summary: string | null;
-    risks: string | null;
+    risks: unknown;
     confidence: number | null;
   }> | null;
 };

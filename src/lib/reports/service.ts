@@ -3,10 +3,10 @@ import { createClient, hasSupabaseEnvironment } from "@/lib/supabase/client";
 import type { Report, ReportPriority, ReportRow, ReportsPayload, ReportStatus } from "./types";
 
 const priorities: Record<ReportRow["priority"], ReportPriority> = {
-  critical: "Crítica",
-  high: "Alta",
-  medium: "Media",
-  low: "Baja",
+  critica: "Crítica",
+  alta: "Alta",
+  media: "Media",
+  baja: "Baja",
 };
 
 const statuses: Record<ReportRow["status"], ReportStatus> = {
@@ -17,14 +17,22 @@ const statuses: Record<ReportRow["status"], ReportStatus> = {
 };
 
 const categories: Record<string, string> = {
-  waste_pollution: "Residuos y contaminación",
-  water_leak: "Fuga de agua",
-  accessibility: "Accesibilidad",
-  damaged_infrastructure: "Infraestructura dañada",
-  environment_beaches: "Ambiente y playas",
-  public_safety: "Seguridad pública",
-  other: "Otro",
+  residuos_contaminacion: "Residuos y contaminación",
+  fuga_agua: "Fuga de agua",
+  infraestructura_danada: "Infraestructura dañada",
+  accesibilidad: "Accesibilidad",
+  riesgo_comunitario: "Riesgo comunitario",
+  servicios_publicos: "Servicios públicos",
+  ambiente_playas: "Ambiente y playas",
+  otro: "Otro",
 };
+
+function riskLabel(value: unknown) {
+  if (!value) return "Riesgo pendiente de clasificación.";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string").join(" · ") || "Riesgo pendiente de clasificación.";
+  return JSON.stringify(value);
+}
 
 function ageLabel(value: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
@@ -52,10 +60,10 @@ function mapReport(row: ReportRow): Report {
     status: statuses[row.status],
     createdAt: new Intl.DateTimeFormat("es-EC", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.created_at)),
     age: ageLabel(row.created_at),
-    summary: analysis?.summary ?? "Pendiente de análisis y revisión humana.",
-    risk: analysis?.risks ?? "Riesgo pendiente de clasificación.",
+    summary: row.summary ?? analysis?.summary ?? "Pendiente de análisis y revisión humana.",
+    risk: riskLabel(row.risks ?? analysis?.risks),
     source: row.source === "whatsapp" ? "WhatsApp" : "Web",
-    confidence: analysis?.confidence ?? null,
+    confidence: row.confidence ?? analysis?.confidence ?? null,
     coordinates: mapCoordinates(row.latitude, row.longitude),
   };
 }
@@ -68,7 +76,7 @@ export async function getReports(): Promise<ReportsPayload> {
 
   const { data, error } = await createClient()
     .from("reports")
-    .select("id, reference_code, title, category, priority, status, zone, latitude, longitude, source, created_at, report_analysis(summary, risks, confidence)")
+    .select("id, reference_code, title, category, priority, status, zone, latitude, longitude, source, created_at, summary, risks, confidence, report_analysis(summary, risks, confidence)")
     .order("created_at", { ascending: false })
     .limit(100);
 
