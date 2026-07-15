@@ -6,7 +6,7 @@
 - Confirmar RLS y permisos para moderadores.
 - Conectar el dashboard a reportes reales, no solo datos demo.
 - Activar el analisis estructurado con GPT.
-- Implementar entrada operativa desde Discord.
+- Implementar entrada operativa desde Telegram.
 - Anadir estados de carga, error y reintento en los flujos remotos.
 - Configurar pruebas de produccion y logs.
 
@@ -23,7 +23,7 @@
 Supabase remoto
 -> reportes reales
 -> analisis GPT
--> Discord
+-> Telegram
 -> moderacion y seguimiento persistente
 -> mapa real
 -> Semaphore
