@@ -52,7 +52,7 @@ export default function ReportarPage() {
     setError("");
     setSubmitting(true);
     try {
-      const response = await fetch("/api/reports", {
+      const analysisResponse = await fetch("/api/reports/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -61,6 +61,23 @@ export default function ReportarPage() {
           source: "web_form",
           ...(category ? { reportedCategory: category } : {}),
           ...(urgency ? { perceivedUrgency: urgency } : {}),
+        }),
+      });
+      const analysisPayload = await analysisResponse.json().catch(() => null);
+      if (!analysisResponse.ok) {
+        setError(analysisPayload?.error?.message ?? "No se pudo analizar la señal. Intenta nuevamente.");
+        return;
+      }
+      const analysis = analysisPayload?.analysis;
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          zone: cleanZone,
+          text: cleanDescription,
+          source: "web_form",
+          reportedCategory: analysis?.category ?? (category || undefined),
+          perceivedUrgency: analysis?.priority ?? (urgency || undefined),
         }),
       });
       const payload = await response.json().catch(() => null);
