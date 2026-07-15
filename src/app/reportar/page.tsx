@@ -1,0 +1,126 @@
+"use client";
+
+import Link from "next/link";
+import { Check, CircleHelp, LockKeyhole, MapPin, Send, ShieldCheck } from "lucide-react";
+import { FormEvent, useState } from "react";
+import styles from "./reportar.module.css";
+
+const categories = [
+  ["", "Seleccionar categoría"],
+  ["residuos_contaminacion", "Residuos / contaminación"],
+  ["fuga_agua", "Fuga de agua"],
+  ["infraestructura_danada", "Infraestructura dañada"],
+  ["accesibilidad", "Accesibilidad"],
+  ["riesgo_comunitario", "Riesgo comunitario"],
+  ["servicios_publicos", "Servicios públicos"],
+  ["ambiente_playas", "Ambiente / playas"],
+  ["otro", "Otro"],
+];
+
+const urgencies = [
+  ["baja", "BAJA"],
+  ["media", "MEDIA"],
+  ["alta", "ALTA"],
+  ["critica", "CRÍTICA"],
+];
+
+export default function ReportarPage() {
+  const [zone, setZone] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [urgency, setUrgency] = useState("media");
+  const [shareLocation, setShareLocation] = useState(false);
+  const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const cleanZone = zone.trim();
+    const cleanDescription = description.trim();
+
+    if (!cleanZone || cleanZone.length < 3) {
+      setError("Indica una zona reconocible de Manta.");
+      return;
+    }
+    if (!cleanDescription || cleanDescription.length < 20) {
+      setError("Describe el problema con al menos 20 caracteres.");
+      return;
+    }
+
+    setError("");
+    setSubmitted(true);
+  }
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        <header className={styles.topbar}>
+          <div className={styles.brand}>ROMA <span>/ CIUDADANO</span></div>
+          <Link className={styles.backLink} href="/">← VOLVER AL PANEL</Link>
+        </header>
+
+        <section className={styles.intro}>
+          <div>
+            <span className={styles.eyebrow}>{"// NUEVA SEÑAL CIUDADANA"}</span>
+            <h1>Reporta lo que necesita atención en Manta.</h1>
+            <p>Comparte una situación local para que pueda ser clasificada, revisada y convertida en una acción concreta.</p>
+          </div>
+          <aside className={styles.introNote}>
+            <span className={styles.meta}>PROTOCOLO ROMA_01</span>
+            <strong>SEÑAL PRIVADA / ACCIÓN PÚBLICA</strong>
+            <p>No necesitas crear una cuenta. Evita incluir nombres, teléfonos o datos que identifiquen a una persona.</p>
+          </aside>
+        </section>
+
+        <div className={styles.formGrid}>
+          <section className={styles.panel}>
+            <div className={styles.panelHeader}><span>REGISTRAR REPORTE</span><span>INPUT_CHANNEL: WEB</span></div>
+            <form className={styles.formBody} onSubmit={handleSubmit} noValidate>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel} htmlFor="zone">ZONA O REFERENCIA <span className={styles.optional}>REQUERIDO</span></label>
+                <input className={styles.input} id="zone" value={zone} onChange={(event) => setZone(event.target.value)} placeholder="Ej. Playa Murciélago, Tarqui" maxLength={100} />
+                <p className={styles.fieldHint}>Usa un barrio, sector, calle principal o punto de referencia. No escribas tu dirección exacta.</p>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.fieldLabel} htmlFor="description">¿QUÉ ESTÁ PASANDO? <span className={styles.optional}>REQUERIDO</span></label>
+                <textarea className={styles.textarea} id="description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Describe el problema, desde cuándo ocurre y a quién podría afectar..." maxLength={1200} />
+                <p className={styles.fieldHint}>{description.length}/1200 caracteres · No incluyas nombres, números de teléfono ni documentos.</p>
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.fieldLabel} htmlFor="category">CATEGORÍA <span className={styles.optional}>OPCIONAL</span></label>
+                <select className={styles.select} id="category" value={category} onChange={(event) => setCategory(event.target.value)}>
+                  {categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </div>
+
+              <fieldset className={styles.field}>
+                <legend className={styles.fieldLabel}>URGENCIA PERCIBIDA <span className={styles.optional}>OPCIONAL</span></legend>
+                <div className={styles.urgencyGroup}>
+                  {urgencies.map(([value, label]) => <div className={styles.urgencyOption} key={value}><input id={`urgency-${value}`} type="radio" name="urgency" value={value} checked={urgency === value} onChange={() => setUrgency(value)} /><label htmlFor={`urgency-${value}`}>{label}</label></div>)}
+                </div>
+              </fieldset>
+
+              <div className={`${styles.field} ${styles.locationBox}`}>
+                <label className={styles.locationToggle} htmlFor="share-location"><input id="share-location" type="checkbox" checked={shareLocation} onChange={(event) => setShareLocation(event.target.checked)} /><span><strong><MapPin size={13} aria-hidden="true" /> UBICACIÓN APROXIMADA</strong><small>Opcional. Solo se usaría para agrupar reportes por zona, nunca para mostrar tu punto exacto.</small></span></label>
+              </div>
+
+              {error && <p className={styles.error} role="alert">{error}</p>}
+              <div className={styles.privacy}><ShieldCheck size={19} aria-hidden="true" /><div><span className={styles.privacyLabel}>PRIVACIDAD COMO CONFIGURACIÓN BASE</span><p>Este prototipo no solicita nombre, teléfono, cédula ni login. La clasificación de IA será una sugerencia para revisión humana.</p></div></div>
+              <button className={styles.submit} type="submit"><Send size={15} aria-hidden="true" /> ENVIAR SEÑAL PRIVADA</button>
+            </form>
+          </section>
+
+          <aside className={styles.side}>
+            {submitted ? <div className={styles.success} role="status"><Check size={20} aria-hidden="true" /><div><strong>SEÑAL REGISTRADA EN MODO DEMO</strong><p>El formulario fue validado localmente. La conexión con Supabase y el análisis de IA se integrarán en el siguiente paso.</p><code>DEMO-RM-{String(zone.length + description.length).padStart(4, "0")}</code></div></div> : null}
+            <section className={`${styles.panel} ${styles.sidePanel}`}><h2>ANTES DE ENVIAR</h2><ul><li><span>01</span><div>Cuenta lo observable: qué ocurre, dónde y desde cuándo.</div></li><li><span>02</span><div>Elige una urgencia según el posible impacto, no según la identidad de quien reporta.</div></li><li><span>03</span><div>ROMA organizará la señal para que una persona pueda revisarla.</div></li></ul></section>
+            <section className={`${styles.panel} ${styles.sidePanel} ${styles.demoNote}`}><h2><CircleHelp size={14} aria-hidden="true" /> MODO PROTOTIPO</h2><p className={styles.fieldHint}>El envío actual no sale de este navegador ni crea un registro remoto. Es una prueba de UX del flujo ciudadano.</p></section>
+            <section className={`${styles.panel} ${styles.sidePanel}`}><h2><LockKeyhole size={14} aria-hidden="true" /> DATOS QUE NO PEDIMOS</h2><p className={styles.fieldHint}>Nombre · teléfono · cédula · dirección exacta · cuenta de usuario.</p></section>
+          </aside>
+        </div>
+        <footer className={styles.footer}>ROMA / RED DE OBSERVACIÓN MANTA ANÓNIMA · DATOS CIUDADANOS SIN VIGILANCIA</footer>
+      </div>
+    </main>
+  );
+}
