@@ -7,6 +7,10 @@ import {
   type ReportAnalysisInput,
 } from "@/lib/roma-contracts";
 import { createReportHash } from "@/lib/report-hash";
+import { reports as demoReports } from "@/lib/demo-data";
+import { mapReport } from "@/lib/reports/mapper";
+import type { ReportRow } from "@/lib/reports/types";
+import { createServerSupabaseClient, isSupabaseServerConfigured } from "@/lib/supabase/server";
 
 const MAX_ZONE_LENGTH = 120;
 const MAX_TEXT_LENGTH = 5000;
@@ -24,6 +28,26 @@ type PersistedReport = {
   report_hash: string;
   created_at: string;
 };
+
+const reportsSelect = "id,reference_code,title,category,priority,status,zone,latitude,longitude,source,created_at,summary,risks,confidence,report_analysis(summary,risks,confidence)";
+
+export async function GET() {
+  if (!isSupabaseServerConfigured()) {
+    return NextResponse.json({ reports: demoReports, mode: "demo" });
+  }
+
+  const { data, error } = await createServerSupabaseClient().from<ReportRow>("reports").select({
+    select: reportsSelect,
+    order: "created_at.desc",
+    limit: 100,
+  });
+
+  if (error || !data?.length) {
+    return NextResponse.json({ reports: demoReports, mode: "demo" });
+  }
+
+  return NextResponse.json({ reports: data.map(mapReport), mode: "supabase" });
+}
 
 function errorResponse(
   code: string,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  interpretTelegramMessage,
   parseTelegramReport,
   persistTelegramReport,
   sendTelegramConfirmation,
@@ -28,9 +29,11 @@ export async function POST(request: Request) {
     return jsonError("INVALID_JSON", "El update de Telegram debe ser JSON válido.", 400);
   }
 
-  if (!update.message?.text) return NextResponse.json({ ok: true, ignored: true });
+  if (typeof update.message?.text !== "string") return NextResponse.json({ ok: true, ignored: true });
 
-  const report = parseTelegramReport(update);
+  const messageText = update.message.text.trim();
+  const isHelp = /^\/(?:start|help)(?:@\w+)?$/i.test(messageText);
+  const report = isHelp ? null : (parseTelegramReport(update) ?? await interpretTelegramMessage(update));
   if (!report) {
     if (!process.env.TELEGRAM_BOT_TOKEN?.trim()) {
       return jsonError("TELEGRAM_NOT_CONFIGURED", "TELEGRAM_BOT_TOKEN no está configurado en el servidor.", 503);
@@ -38,7 +41,10 @@ export async function POST(request: Request) {
     const chatId = update.message.chat?.id;
     if (typeof chatId === "string" || typeof chatId === "number") {
       try {
-        await sendTelegramConfirmation(String(chatId), telegramHelpMessage());
+        const message = isHelp
+          ? telegramHelpMessage()
+          : "Necesito saber qué ocurre y en qué zona de Manta. Escríbelo como un mensaje normal, por ejemplo: Hay una fuga de agua en Tarqui desde esta mañana.";
+        await sendTelegramConfirmation(String(chatId), message);
         return NextResponse.json({ ok: true, guided: true });
       } catch {
         return jsonError("TELEGRAM_SEND_FAILED", "Telegram no pudo enviar la ayuda del bot.", 502);

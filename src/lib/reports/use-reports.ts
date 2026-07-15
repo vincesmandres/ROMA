@@ -3,10 +3,10 @@
 import useSWR from "swr";
 import { getReports } from "./service";
 
-export function useReports() {
+export function useReports(live = true) {
   return useSWR("roma:reports", getReports, {
     revalidateOnFocus: true,
-    refreshInterval: 60_000,
+    refreshInterval: live ? 5_000 : 0,
     keepPreviousData: true,
   });
 }
