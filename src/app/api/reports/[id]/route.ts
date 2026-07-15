@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import type { ReportRow } from "@/lib/reports/types";
 import { createServerSupabaseClient, isSupabaseServerConfigured } from "@/lib/supabase/server";
+import { reports as demoReports } from "@/lib/demo-data";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -31,6 +32,9 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   });
 
   if (error || !data?.[0]?.id) {
+    if (demoReports.some((report) => report.id.toLowerCase() === decodeURIComponent(id).toLowerCase())) {
+      return NextResponse.json({ ok: true, mode: "demo" });
+    }
     return NextResponse.json({ ok: false, error: { message: "El reporte no existe." } }, { status: 404 });
   }
 
