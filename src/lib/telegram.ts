@@ -97,6 +97,7 @@ export async function persistTelegramReport(report: TelegramReport): Promise<Tel
     },
     body: JSON.stringify({
       source: "telegram",
+      title: `Reporte ciudadano - ${report.zone}`.slice(0, 160),
       zone: report.zone,
       text_redacted: redactedText,
       priority: report.urgency ?? null,
