@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ArrowUpRight,
@@ -29,7 +30,7 @@ type FollowUpItem = {
   note: string;
 };
 
-const followUps: FollowUpItem[] = [
+const initialFollowUps: FollowUpItem[] = [
   {
     id: "ACT-0084",
     reportId: "ROMA-0247",
@@ -106,23 +107,29 @@ const priorityClass: Record<FollowUpItem["priority"], string> = {
 };
 
 export default function SeguimientoPage() {
+  const [followUps, setFollowUps] = useState(initialFollowUps);
   const [filter, setFilter] = useState<FollowUpStatus | "TODAS">("TODAS");
   const [selectedId, setSelectedId] = useState(followUps[0].id);
 
   const visibleItems = useMemo(
     () => filter === "TODAS" ? followUps : followUps.filter((item) => item.status === filter),
-    [filter],
+    [filter, followUps],
   );
 
   const selected = followUps.find((item) => item.id === selectedId) ?? followUps[0];
   const pendingCount = followUps.filter((item) => item.status !== "COMPLETADO").length;
   const blockedCount = followUps.filter((item) => item.status === "BLOQUEADO").length;
 
+  const advanceSelected = () => {
+    const nextStatus: Record<FollowUpStatus, FollowUpStatus> = { PENDIENTE: "EN CURSO", "EN CURSO": "COMPLETADO", BLOQUEADO: "PENDIENTE", COMPLETADO: "COMPLETADO" };
+    setFollowUps((current) => current.map((item) => item.id === selected.id ? { ...item, status: nextStatus[item.status] } : item));
+  };
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
         <div className={styles.brandLine}>
-          <span className={styles.brand}>ROMA</span>
+          <Link className={styles.brand} href="/">ROMA</Link>
           <span className={styles.path}>/ OPS / FOLLOW-UP</span>
         </div>
         <div className={styles.headerStatus}><i /> SYSTEM READY <ShieldCheck size={15} /></div>
@@ -189,6 +196,7 @@ export default function SeguimientoPage() {
                 <div><dt><Clock3 size={14} /> FECHA LIMITE</dt><dd>{selected.dueLabel}</dd></div>
               </dl>
               <div className={styles.progressBlock}><div><span>TRACKING STATUS</span><strong>{selected.status === "COMPLETADO" ? "100%" : selected.status === "EN CURSO" ? "60%" : "20%"}</strong></div><div className={styles.progress}><i style={{ width: selected.status === "COMPLETADO" ? "100%" : selected.status === "EN CURSO" ? "60%" : "20%" }} /></div></div>
+              <button className={styles.advanceAction} type="button" disabled={selected.status === "COMPLETADO"} onClick={advanceSelected}>{selected.status === "BLOQUEADO" ? "REACTIVAR ACCIÓN" : selected.status === "EN CURSO" ? "MARCAR COMPLETADA" : selected.status === "COMPLETADO" ? "ACCIÓN COMPLETADA" : "INICIAR ACCIÓN"}</button>
               <a className={styles.openReport} href={`/reporte/${selected.reportId}`}><span>ABRIR REPORTE {selected.reportId}</span><ArrowUpRight size={16} /></a>
               <div className={styles.privacyNote}><CheckCircle2 size={15} /> DATOS PERSONALES OMITIDOS EN ESTA VISTA</div>
             </div>

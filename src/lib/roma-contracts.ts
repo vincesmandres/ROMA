@@ -21,7 +21,7 @@ export const ROMA_STATUSES = ["pending", "in_review", "escalated", "resolved"] a
 
 export type RomaStatus = (typeof ROMA_STATUSES)[number];
 
-export const ROMA_SOURCES = ["web_form", "whatsapp"] as const;
+export const ROMA_SOURCES = ["web_form", "whatsapp", "telegram"] as const;
 
 export type RomaSource = (typeof ROMA_SOURCES)[number];
 

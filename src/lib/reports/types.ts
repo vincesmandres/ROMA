@@ -12,7 +12,7 @@ export type Report = {
   age: string;
   summary: string;
   risk: string;
-  source: "Web" | "WhatsApp";
+  source: "Web" | "WhatsApp" | "Telegram";
   confidence: number | null;
   coordinates: { x: number; y: number };
 };
@@ -27,7 +27,7 @@ export type ReportRow = {
   zone: string;
   latitude: number | null;
   longitude: number | null;
-  source: "web" | "whatsapp";
+  source: "web" | "whatsapp" | "telegram";
   created_at: string;
   summary: string | null;
   risks: unknown;

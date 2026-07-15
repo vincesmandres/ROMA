@@ -31,7 +31,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   });
 
   if (error || !data?.[0]?.id) {
-    return NextResponse.json({ ok: true, mode: "demo" });
+    return NextResponse.json({ ok: false, error: { message: "El reporte no existe." } }, { status: 404 });
   }
 
   const updated = await client.from<ReportRow>("reports").update(

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, CircleHelp, LockKeyhole, MapPin, Send, ShieldCheck } from "lucide-react";
+import { Check, CircleHelp, LockKeyhole, MapPin, RotateCcw, Send, ShieldCheck } from "lucide-react";
 import { FormEvent, useState } from "react";
 import styles from "./reportar.module.css";
 
@@ -30,10 +30,30 @@ export default function ReportarPage() {
   const [category, setCategory] = useState("");
   const [urgency, setUrgency] = useState("media");
   const [shareLocation, setShareLocation] = useState(false);
+  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState("");
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [reportId, setReportId] = useState("");
+
+  function handleLocationToggle(checked: boolean) {
+    if (!checked) { setShareLocation(false); setCoordinates(null); setLocationStatus(""); return; }
+    if (!("geolocation" in navigator)) { setLocationStatus("Tu navegador no permite compartir ubicación."); return; }
+    setShareLocation(true); setLocationStatus("Obteniendo ubicación aproximada...");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setCoordinates({ latitude: Math.round(coords.latitude * 1000) / 1000, longitude: Math.round(coords.longitude * 1000) / 1000 });
+        setLocationStatus("Ubicación aproximada lista (precisión reducida por privacidad). ");
+      },
+      () => { setShareLocation(false); setCoordinates(null); setLocationStatus("No se concedió acceso a la ubicación."); },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+    );
+  }
+
+  function resetForm() {
+    setZone(""); setDescription(""); setCategory(""); setUrgency("media"); setShareLocation(false); setCoordinates(null); setLocationStatus(""); setError(""); setSubmitted(false); setReportId("");
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,6 +98,7 @@ export default function ReportarPage() {
           source: "web_form",
           reportedCategory: analysis?.category ?? (category || undefined),
           perceivedUrgency: analysis?.priority ?? (urgency || undefined),
+          ...(coordinates ?? {}),
         }),
       });
       const payload = await response.json().catch(() => null);
@@ -149,7 +170,7 @@ export default function ReportarPage() {
               </fieldset>
 
               <div className={`${styles.field} ${styles.locationBox}`}>
-                <label className={styles.locationToggle} htmlFor="share-location"><input id="share-location" type="checkbox" checked={shareLocation} onChange={(event) => setShareLocation(event.target.checked)} /><span><strong><MapPin size={13} aria-hidden="true" /> UBICACIÓN APROXIMADA</strong><small>Opcional. Solo se usaría para agrupar reportes por zona, nunca para mostrar tu punto exacto.</small></span></label>
+                <label className={styles.locationToggle} htmlFor="share-location"><input id="share-location" type="checkbox" checked={shareLocation} onChange={(event) => handleLocationToggle(event.target.checked)} /><span><strong><MapPin size={13} aria-hidden="true" /> UBICACIÓN APROXIMADA</strong><small>Opcional. Solo se usaría para agrupar reportes por zona, nunca para mostrar tu punto exacto.</small>{locationStatus && <small className={styles.locationStatus}>{locationStatus}</small>}</span></label>
               </div>
 
               {error && <p className={styles.error} role="alert">{error}</p>}
@@ -159,9 +180,9 @@ export default function ReportarPage() {
           </section>
 
           <aside className={styles.side}>
-            {submitted ? <div className={styles.success} role="status"><Check size={20} aria-hidden="true" /><div><strong>SEÑAL REGISTRADA</strong><p>El reporte fue validado, redactado y enviado al flujo de revisión de ROMA.</p><code>{reportId}</code></div></div> : null}
+            {submitted ? <div className={styles.success} role="status"><Check size={20} aria-hidden="true" /><div><strong>SEÑAL REGISTRADA</strong><p>El reporte fue validado, redactado y enviado al flujo de revisión de ROMA.</p><code>{reportId}</code><div className={styles.successActions}><button type="button" onClick={resetForm}><RotateCcw size={13} /> NUEVA SEÑAL</button><Link href="/">VER PANEL</Link></div></div></div> : null}
             <section className={`${styles.panel} ${styles.sidePanel}`}><h2>ANTES DE ENVIAR</h2><ul><li><span>01</span><div>Cuenta lo observable: qué ocurre, dónde y desde cuándo.</div></li><li><span>02</span><div>Elige una urgencia según el posible impacto, no según la identidad de quien reporta.</div></li><li><span>03</span><div>ROMA organizará la señal para que una persona pueda revisarla.</div></li></ul></section>
-            <section className={`${styles.panel} ${styles.sidePanel} ${styles.demoNote}`}><h2><CircleHelp size={14} aria-hidden="true" /> CANALES ACTIVOS</h2><p className={styles.fieldHint}>Envía desde esta página o usa <a href="https://t.me/RomaReporteBot" target="_blank" rel="noreferrer">@RomaReporteBot</a> con: /reportar zona | descripción | urgencia.</p></section>
+            <section className={`${styles.panel} ${styles.sidePanel} ${styles.demoNote}`}><h2><CircleHelp size={14} aria-hidden="true" /> CANALES ACTIVOS</h2><p className={styles.fieldHint}>Envía desde esta página o cuéntale el problema y la zona directamente a <a href="https://t.me/RomaReporteBot" target="_blank" rel="noreferrer">@RomaReporteBot</a>.</p></section>
             <section className={`${styles.panel} ${styles.sidePanel}`}><h2><LockKeyhole size={14} aria-hidden="true" /> DATOS QUE NO PEDIMOS</h2><p className={styles.fieldHint}>Nombre · teléfono · cédula · dirección exacta · cuenta de usuario.</p></section>
           </aside>
         </div>

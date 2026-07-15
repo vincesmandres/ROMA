@@ -14,6 +14,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { reports, type Report } from "@/lib/demo-data";
+import { updateReportStatus } from "@/lib/reports/service";
+import { useReports } from "@/lib/reports/use-reports";
 import {
   type ReportAnalysisOutput,
   type RomaCategory,
@@ -98,7 +100,16 @@ function hashFor(report: Report) {
 export default function ReportDetailPage({ params }: DetailPageProps) {
   const { id } = use(params);
   const [copied, setCopied] = useState(false);
-  const report = reports.find((item) => item.id.toLowerCase() === decodeURIComponent(id).toLowerCase());
+  const [statusOverride, setStatusOverride] = useState<Report["status"] | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const { data, isLoading, mutate } = useReports(false);
+  const allReports = [...(data?.reports ?? []), ...reports.filter((demo) => !data?.reports.some((item) => item.id === demo.id))];
+  const report = allReports.find((item) => item.id.toLowerCase() === decodeURIComponent(id).toLowerCase());
+
+  if (isLoading && !report) {
+    return <main className={styles.page}><section className={styles.notFound}><span className={styles.eyebrow}>REPORT LOOKUP</span><h1>Cargando señal...</h1></section></main>;
+  }
 
   if (!report) {
     return (
@@ -118,6 +129,7 @@ export default function ReportDetailPage({ params }: DetailPageProps) {
   }
 
   const analysis = buildAnalysis(report);
+  const effectiveStatus = statusOverride ?? report.status;
   const shareReport = async () => {
     try {
       await navigator.clipboard.writeText(analysis.whatsapp_message);
@@ -126,6 +138,18 @@ export default function ReportDetailPage({ params }: DetailPageProps) {
     } catch {
       setCopied(false);
     }
+  };
+
+  const changeStatus = async (status: Report["status"]) => {
+    const previous = effectiveStatus;
+    setStatusOverride(status); setStatusBusy(true); setStatusMessage("");
+    try {
+      await updateReportStatus(report.id, status);
+      if (data) await mutate({ ...data, reports: data.reports.map((item) => item.id === report.id ? { ...item, status } : item) }, { revalidate: false });
+      setStatusMessage(`Estado actualizado a ${status.toLowerCase()}.`);
+    } catch {
+      setStatusOverride(previous); setStatusMessage("No se pudo guardar el estado. Intenta nuevamente.");
+    } finally { setStatusBusy(false); }
   };
 
   return (
@@ -147,14 +171,14 @@ export default function ReportDetailPage({ params }: DetailPageProps) {
             <p>Revisión humana de una señal ciudadana anonimizada.</p>
           </div>
           <div className={styles.statusStack}>
-            <span className={`${styles.statusTag} ${styles.statusReview}`}>{statusLabels[report.status]}</span>
+            <span className={`${styles.statusTag} ${styles.statusReview}`}>{statusLabels[effectiveStatus]}</span>
             <span className={styles.sourceTag}>{report.source.toUpperCase()} / {report.createdAt}</span>
           </div>
         </section>
 
         <section className={styles.grid}>
           <div className={styles.mainColumn}>
-            <article className={styles.panel}>
+            <article className={styles.panel} id="brief">
               <div className={styles.panelHeader}><span className={styles.eyebrow}>CITIZEN SIGNAL</span><span className={styles.redacted}><CheckCircle2 size={14} /> PERSONAL DATA OMITTED</span></div>
               <div className={styles.panelBody}>
                 <div className={styles.location}><MapPin size={15} /> {report.zone} <span>/</span> {report.category}</div>
@@ -185,6 +209,12 @@ export default function ReportDetailPage({ params }: DetailPageProps) {
               <div className={styles.panelBody}>
                 <p className={styles.briefText}>{analysis.whatsapp_message}</p>
                 <button className={styles.primaryAction} type="button" onClick={shareReport}><Clipboard size={15} /> {copied ? "COPIADO" : "COPIAR MENSAJE"}</button>
+                <div className={styles.statusActions} aria-label="Cambiar estado del reporte">
+                  <button type="button" disabled={statusBusy || effectiveStatus === "En revisión"} onClick={() => changeStatus("En revisión")}>EN REVISIÓN</button>
+                  <button type="button" disabled={statusBusy || effectiveStatus === "Escalado"} onClick={() => changeStatus("Escalado")}>ESCALAR</button>
+                  <button type="button" disabled={statusBusy || effectiveStatus === "Resuelto"} onClick={() => changeStatus("Resuelto")}>RESOLVER</button>
+                </div>
+                {statusMessage && <p className={styles.statusMessage} role="status">{statusMessage}</p>}
                 <p className={styles.humanNote}>La clasificación es una sugerencia. Una persona responsable debe validar el punto antes de actuar o comunicarlo como hecho confirmado.</p>
               </div>
             </article>

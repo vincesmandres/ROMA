@@ -1,4 +1,5 @@
 import { createReportHash } from "@/lib/report-hash";
+import { isRomaCategory } from "@/lib/roma-contracts";
 
 const MAX_ZONE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 5000;
@@ -170,11 +171,11 @@ export async function persistTelegramReport(report: TelegramReport): Promise<Tel
   const reportHash = await createReportHash({
     redactedText,
     zone: report.zone,
-    category: null,
+    category: isRomaCategory(report.category) ? report.category : null,
     createdAt,
   });
 
-  const response = await fetch(`${config.url}/rest/v1/reports?select=id`, {
+  const response = await fetch(`${config.url}/rest/v1/reports?select=id,reference_code`, {
     method: "POST",
     headers: {
       apikey: config.key,
@@ -183,7 +184,7 @@ export async function persistTelegramReport(report: TelegramReport): Promise<Tel
       Prefer: "return=representation",
     },
     body: JSON.stringify({
-      source: "web",
+      source: "telegram",
       title: report.description.slice(0, 160),
       description: redactedText,
       zone: report.zone,
@@ -201,8 +202,8 @@ export async function persistTelegramReport(report: TelegramReport): Promise<Tel
   });
 
   if (!response.ok) throw new Error("REPORT_PERSISTENCE_FAILED");
-  const persisted = (await response.json()) as Array<{ id?: string }>;
-  return { id: persisted[0]?.id ?? null, reportHash };
+  const persisted = (await response.json()) as Array<{ id?: string; reference_code?: string }>;
+  return { id: persisted[0]?.reference_code ?? persisted[0]?.id ?? null, reportHash };
 }
 
 export async function sendTelegramConfirmation(chatId: string, message: string): Promise<void> {
@@ -231,14 +232,13 @@ export function telegramConfirmation(report: TelegramReport, id: string | null):
 export function telegramHelpMessage(): string {
   return [
     "Bienvenido a ROMA.",
-    "Reporta una situacion de Manta sin compartir datos personales.",
-    "",
-    "Usa este formato:",
-    "/reportar zona | descripcion | urgencia",
+    "Cuéntame qué ocurre y en qué zona de Manta, como lo escribirías normalmente.",
     "",
     "Ejemplo:",
-    "/reportar Tarqui | Fuga de agua en la calle principal | alta",
+    "Hay una fuga de agua en Tarqui desde esta mañana.",
     "",
-    "Urgencias: baja, media, alta o critica.",
+    "También puedes usar el formato:",
+    "/reportar zona | descripcion | urgencia",
+    "No compartas nombres, teléfonos ni documentos personales.",
   ].join("\n");
 }

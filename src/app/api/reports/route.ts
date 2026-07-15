@@ -15,11 +15,11 @@ import { createServerSupabaseClient, isSupabaseServerConfigured } from "@/lib/su
 const MAX_ZONE_LENGTH = 120;
 const MAX_TEXT_LENGTH = 5000;
 
-type CreateReportBody = Partial<ReportAnalysisInput>;
+type CreateReportBody = Partial<ReportAnalysisInput> & { latitude?: unknown; longitude?: unknown };
 
 type PersistedReport = {
   id: string;
-  source: ReportAnalysisInput["source"];
+  source: "web" | "whatsapp" | "telegram";
   zone: string;
   text_redacted: string;
   category: ReportAnalysisInput["reportedCategory"] | null;
@@ -42,11 +42,11 @@ export async function GET() {
     limit: 100,
   });
 
-  if (error || !data?.length) {
+  if (error) {
     return NextResponse.json({ reports: demoReports, mode: "demo" });
   }
 
-  return NextResponse.json({ reports: data.map(mapReport), mode: "supabase" });
+  return NextResponse.json({ reports: (data ?? []).map(mapReport), mode: "supabase" });
 }
 
 function errorResponse(
@@ -73,7 +73,7 @@ function redactSensitiveText(value: string): string {
 }
 
 function validateBody(body: unknown):
-  | { ok: true; value: { zone: string; text: string; source: ReportAnalysisInput["source"]; reportedCategory?: ReportAnalysisInput["reportedCategory"]; perceivedUrgency?: ReportAnalysisInput["perceivedUrgency"] } }
+  | { ok: true; value: { zone: string; text: string; source: ReportAnalysisInput["source"]; reportedCategory?: ReportAnalysisInput["reportedCategory"]; perceivedUrgency?: ReportAnalysisInput["perceivedUrgency"]; latitude?: number; longitude?: number } }
   | { ok: false; response: ReturnType<typeof errorResponse> } {
   if (!body || typeof body !== "object") {
     return { ok: false, response: errorResponse("INVALID_JSON", "El cuerpo debe ser un objeto JSON.", 400) };
@@ -93,7 +93,7 @@ function validateBody(body: unknown):
   }
 
   if (!ROMA_SOURCES.includes(source as (typeof ROMA_SOURCES)[number])) {
-    return { ok: false, response: errorResponse("INVALID_SOURCE", "La fuente debe ser web_form o whatsapp.", 422) };
+    return { ok: false, response: errorResponse("INVALID_SOURCE", "La fuente debe ser web_form, whatsapp o telegram.", 422) };
   }
 
   if (input.reportedCategory !== undefined && !isRomaCategory(input.reportedCategory)) {
@@ -104,6 +104,13 @@ function validateBody(body: unknown):
     return { ok: false, response: errorResponse("INVALID_URGENCY", "La urgencia indicada no pertenece al vocabulario de ROMA.", 422) };
   }
 
+  const latitude = typeof input.latitude === "number" ? input.latitude : null;
+  const longitude = typeof input.longitude === "number" ? input.longitude : null;
+  const hasCoordinates = latitude !== null && longitude !== null;
+  if (hasCoordinates && (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)) {
+    return { ok: false, response: errorResponse("INVALID_LOCATION", "La ubicación aproximada no es válida.", 422) };
+  }
+
   return {
     ok: true,
     value: {
@@ -112,6 +119,7 @@ function validateBody(body: unknown):
       source: source as ReportAnalysisInput["source"],
       ...(input.reportedCategory ? { reportedCategory: input.reportedCategory } : {}),
       ...(input.perceivedUrgency ? { perceivedUrgency: input.perceivedUrgency } : {}),
+      ...(hasCoordinates ? { latitude, longitude } : {}),
     },
   };
 }
@@ -154,7 +162,7 @@ export async function POST(request: Request) {
   }
 
   const row = {
-    source: "web",
+    source: input.source === "web_form" ? "web" : input.source,
     title: `${input.reportedCategory ?? "Reporte ciudadano"} - ${input.zone}`.slice(0, 160),
     description: redactedText,
     zone: input.zone,
@@ -165,6 +173,7 @@ export async function POST(request: Request) {
     report_hash: reportHash,
     created_at: createdAt,
     updated_at: createdAt,
+    ...(input.latitude !== undefined && input.longitude !== undefined ? { latitude: input.latitude, longitude: input.longitude } : {}),
   };
 
   let response: Response;

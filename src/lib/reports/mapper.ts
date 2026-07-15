@@ -51,6 +51,7 @@ function mapCoordinates(latitude: number | null, longitude: number | null) {
 
 export function mapReport(row: ReportRow): Report {
   const analysis = row.report_analysis?.[0];
+  const source = row.source === "telegram" ? "Telegram" : row.source === "whatsapp" ? "WhatsApp" : "Web";
   return {
     id: row.reference_code,
     title: row.title,
@@ -62,7 +63,7 @@ export function mapReport(row: ReportRow): Report {
     age: ageLabel(row.created_at),
     summary: row.summary ?? analysis?.summary ?? "Pendiente de análisis y revisión humana.",
     risk: riskLabel(row.risks ?? analysis?.risks),
-    source: row.source === "whatsapp" ? "WhatsApp" : "Web",
+    source,
     confidence: row.confidence ?? analysis?.confidence ?? null,
     coordinates: mapCoordinates(row.latitude, row.longitude),
   };

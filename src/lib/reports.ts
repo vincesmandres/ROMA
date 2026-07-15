@@ -46,7 +46,7 @@ function toReport(row: ReportRow): Report {
     summary: row.text_redacted,
     risk: row.risks?.join(" y ") || "Por revisar",
     confidence: row.confidence ?? null,
-    source: row.source === "whatsapp" ? "WhatsApp" : "Web",
+    source: row.source === "telegram" ? "Telegram" : row.source === "whatsapp" ? "WhatsApp" : "Web",
     coordinates: { x: 50, y: 50 },
   };
 }
