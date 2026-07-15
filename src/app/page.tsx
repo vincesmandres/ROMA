@@ -3,25 +3,18 @@
 import { useMemo, useState } from "react";
 import {
   Activity,
-  ArrowUpRight,
-  Bell,
-  Bot,
-  ChevronDown,
-  CircleHelp,
-  ClipboardCheck,
-  ExternalLink,
+  BarChart3,
+  CheckSquare,
+  ChevronRight,
+  Download,
+  Edit3,
   FileText,
   Filter,
-  Layers3,
   Map,
   Menu,
-  MessageSquareText,
-  MoreHorizontal,
-  RefreshCw,
+  Radio,
   Search,
   ShieldCheck,
-  Sparkles,
-  Users,
   X,
 } from "lucide-react";
 import { reports, type Report, type ReportPriority, type ReportStatus } from "@/lib/demo-data";
@@ -40,117 +33,61 @@ const statusStyles: Record<ReportStatus, string> = {
   Resuelto: "status-resolved",
 };
 
-const navItems = [
-  { label: "Resumen", icon: Activity, active: true },
-  { label: "Reportes", icon: FileText, count: "24" },
-  { label: "Mapa territorial", icon: Map },
-  { label: "Seguimiento", icon: ClipboardCheck, count: "8" },
-];
-
-function Pill({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <span className={`pill ${className}`}>{children}</span>;
+function StatusTag({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <span className={`terminal-tag ${className}`}>{children}</span>;
 }
 
-function MetricCard({ label, value, detail, tone, icon: Icon }: { label: string; value: string; detail: string; tone: string; icon: typeof Activity }) {
-  return (
-    <article className="metric-card">
-      <div className={`metric-icon ${tone}`}><Icon size={18} strokeWidth={2} /></div>
-      <div className="metric-copy">
-        <p>{label}</p>
-        <strong>{value}</strong>
-        <span>{detail}</span>
-      </div>
-      <ArrowUpRight className="metric-arrow" size={16} />
-    </article>
-  );
-}
+function MapSurface({ selected, onSelect }: { selected?: Report; onSelect: (report: Report) => void }) {
+  const areas = [
+    { name: "TARQUI", count: "08", x: "27%", y: "54%", tone: "critical" },
+    { name: "LOS ESTEROS", count: "12", x: "62%", y: "21%", tone: "primary" },
+    { name: "CENTRO", count: "24", x: "45%", y: "38%", tone: "medium" },
+  ];
 
-function MapPanel({ selected, onSelect }: { selected: Report | undefined; onSelect: (report: Report) => void }) {
   return (
-    <section className="panel map-panel">
-      <div className="panel-heading">
-        <div>
-          <p className="eyebrow">SEÑALES EN TERRITORIO</p>
-          <h2>Actividad reciente en Manta</h2>
-        </div>
-        <button className="icon-button" aria-label="Abrir mapa completo" title="Abrir mapa completo"><ExternalLink size={16} /></button>
-      </div>
-      <div className="map-toolbar">
-        <div className="map-legend"><span className="legend-dot critical" /> Crítica <span className="legend-dot high" /> Alta <span className="legend-dot medium" /> Media</div>
-        <button className="map-filter"><Layers3 size={14} /> Todas las categorías <ChevronDown size={14} /></button>
-      </div>
-      <div className="map-canvas" aria-label="Mapa demostrativo de reportes en Manta">
-        <div className="map-water" />
-        <div className="map-road road-a" /><div className="map-road road-b" /><div className="map-road road-c" /><div className="map-road road-d" />
-        <div className="map-label label-murcielago">Playa Murciélago</div>
-        <div className="map-label label-centro">Centro</div>
-        <div className="map-label label-tarqui">Tarqui</div>
-        {reports.map((report) => (
-          <button
-            className={`map-pin ${priorityStyles[report.priority]} ${selected?.id === report.id ? "selected" : ""}`}
-            key={report.id}
-            style={{ left: `${report.coordinates.x}%`, top: `${report.coordinates.y}%` }}
-            onClick={() => onSelect(report)}
-            aria-label={`Ver ${report.title}`}
-            title={report.title}
-          ><span /></button>
-        ))}
-        <div className="map-attribution">© OpenStreetMap contributors · Vista demostrativa</div>
-      </div>
+    <section className="map-surface" aria-label="Mapa territorial demostrativo de Manta">
+      <div className="map-grid" />
+      <div className="map-coast" />
+      <div className="map-line line-1" /><div className="map-line line-2" /><div className="map-line line-3" /><div className="map-line line-4" /><div className="map-line line-5" />
+      <div className="map-meta">DASHBOARD OPERATIVO / PRIORIDAD MAPA — MANTA, ECUADOR</div>
+      <div className="map-coordinates">COORDENADAS: 0.95° S, 80.70° W</div>
+      {areas.map((area) => (
+        <button className={`area-marker ${area.tone}`} key={area.name} style={{ left: area.x, top: area.y }} onClick={() => onSelect(reports.find((report) => report.zone.toUpperCase().includes(area.name.split(" ")[0])) ?? reports[0])}>
+          <span>{area.name}</span><strong>{area.count} ACTIVE</strong><i />
+        </button>
+      ))}
+      {reports.map((report) => <button key={report.id} className={`signal-pin ${priorityStyles[report.priority]} ${selected?.id === report.id ? "selected" : ""}`} style={{ left: `${report.coordinates.x}%`, top: `${report.coordinates.y}%` }} onClick={() => onSelect(report)} aria-label={`Abrir ${report.id}`} title={report.title}><i /></button>)}
+      <div className="map-north">N<br /><span>↑</span></div>
+      <div className="map-attribution">© OpenStreetMap contributors · Vista demo</div>
     </section>
   );
 }
 
-function ReportDetail({ report, onClose }: { report: Report; onClose: () => void }) {
-  return (
-    <aside className="detail-drawer">
-      <div className="drawer-heading">
-        <div><p className="eyebrow">DETALLE DEL REPORTE</p><h2>{report.id}</h2></div>
-        <button className="icon-button" onClick={onClose} aria-label="Cerrar detalle" title="Cerrar detalle"><X size={17} /></button>
-      </div>
-      <div className="drawer-body">
-        <div className="detail-title-row"><h3>{report.title}</h3><Pill className={priorityStyles[report.priority]}>{report.priority}</Pill></div>
-        <p className="detail-zone"><Map size={14} /> {report.zone} <span>·</span> {report.age}</p>
-        <div className="detail-block"><span className="detail-label">Resumen de IA</span><p>{report.summary}</p></div>
-        <div className="detail-grid"><div><span className="detail-label">Categoría</span><strong>{report.category}</strong></div><div><span className="detail-label">Origen</span><strong>{report.source}</strong></div></div>
-        <div className="risk-callout"><ShieldCheck size={17} /><div><span className="detail-label">Riesgo identificado</span><p>{report.risk}</p></div></div>
-        <div className="confidence"><div><span>Confianza del análisis</span><strong>87%</strong></div><div className="progress"><i style={{ width: "87%" }} /></div></div>
-        <div className="drawer-actions"><button className="primary-button"><ClipboardCheck size={16} /> Revisar reporte</button><button className="secondary-button"><MessageSquareText size={16} /> Generar brief</button></div>
-      </div>
-    </aside>
-  );
+function FeedCard({ report, selected, onSelect }: { report: Report; selected?: boolean; onSelect: () => void }) {
+  return <button className={`signal-card ${selected ? "selected" : ""}`} onClick={onSelect}>
+    <div className="signal-card-top"><span className="signal-id">#{report.id.replace("ROMA-", "RM-")}</span><StatusTag className={priorityStyles[report.priority]}>{report.priority === "Crítica" ? "URGENTE" : report.priority.toUpperCase()}</StatusTag></div>
+    <p>{report.title}.</p>
+    <div className="signal-card-meta"><span>{report.zone.toUpperCase()} · {report.age.toUpperCase()}</span><ChevronRight size={15} /></div>
+  </button>;
+}
+
+function DetailPanel({ report, onClose }: { report: Report; onClose: () => void }) {
+  return <aside className="detail-panel">
+    <div className="detail-panel-head"><div><span className="section-label">SELECTED SIGNAL</span><h2>#{report.id.replace("ROMA-", "RM-")}</h2></div><button className="terminal-icon" onClick={onClose} aria-label="Cerrar detalle"><X size={17} /></button></div>
+    <div className="detail-panel-body"><div className="detail-status"><StatusTag className={priorityStyles[report.priority]}>{report.priority.toUpperCase()}</StatusTag><StatusTag className={statusStyles[report.status]}>{report.status.toUpperCase()}</StatusTag></div><h3>{report.title}</h3><p className="detail-location"><Map size={14} /> {report.zone} · {report.source}</p><div className="detail-section"><span className="section-label">AI SUMMARY</span><p>{report.summary}</p></div><div className="detail-section"><span className="section-label">RISK DETECTED</span><p className="risk-copy">{report.risk}</p></div><div className="detail-section confidence-row"><span className="section-label">CONFIDENCE</span><strong>87%</strong><div className="terminal-progress"><i /></div></div><button className="terminal-action primary"><CheckSquare size={15} /> REVIEW SIGNAL</button><button className="terminal-action"><FileText size={15} /> GENERATE BRIEF</button></div>
+  </aside>;
 }
 
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Todos los estados");
   const [selected, setSelected] = useState<Report | undefined>(reports[0]);
+  const [query, setQuery] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
-  const filteredReports = useMemo(() => reports.filter((report) => {
-    const matchesQuery = `${report.id} ${report.title} ${report.zone} ${report.category}`.toLowerCase().includes(query.toLowerCase());
-    const matchesStatus = status === "Todos los estados" || report.status === status;
-    return matchesQuery && matchesStatus;
-  }), [query, status]);
+  const filtered = useMemo(() => reports.filter((report) => `${report.id} ${report.title} ${report.zone}`.toLowerCase().includes(query.toLowerCase())), [query]);
 
-  return (
-    <div className="roma-shell">
-      <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
-        <div className="brand"><div className="brand-mark">R</div><div><strong>ROMA</strong><span>inteligencia cívica</span></div><button className="icon-button mobile-close" onClick={() => setMobileNav(false)} aria-label="Cerrar menú"><X size={17} /></button></div>
-        <div className="workspace-switch"><div className="workspace-avatar">M</div><div><strong>Operación Manta</strong><span>Espacio de trabajo</span></div><ChevronDown size={15} /></div>
-        <nav className="main-nav" aria-label="Navegación principal"><p className="nav-label">OPERACIÓN</p>{navItems.map(({ label, icon: Icon, active, count }) => <button className={`nav-item ${active ? "active" : ""}`} key={label}><Icon size={17} /><span>{label}</span>{count && <em>{count}</em>}</button>)}<p className="nav-label nav-spacer">GESTIÓN</p><button className="nav-item"><Users size={17} /><span>Comunidades</span></button><button className="nav-item"><Bot size={17} /><span>Automatizaciones</span><span className="soon">Pronto</span></button></nav>
-        <div className="sidebar-bottom"><div className="privacy-note"><ShieldCheck size={17} /><div><strong>Privacidad activa</strong><span>Sin datos personales expuestos</span></div></div><button className="nav-item"><CircleHelp size={17} /><span>Centro de ayuda</span></button><div className="profile"><div className="profile-avatar">MV</div><div><strong>María V.</strong><span>Moderadora</span></div><MoreHorizontal size={17} /></div></div>
-      </aside>
-      <main className="main-content">
-        <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Abrir menú"><Menu size={19} /></button><div className="breadcrumb"><span>Operación Manta</span><span>/</span><strong>Resumen</strong></div><div className="top-actions"><span className="live-status"><i /> Sistema operativo</span><button className="icon-button" aria-label="Actualizar datos" title="Actualizar datos"><RefreshCw size={17} /></button><button className="icon-button notification" aria-label="Notificaciones" title="Notificaciones"><Bell size={17} /><i /></button></div></header>
-        <div className="content-wrap">
-          <section className="page-intro"><div><p className="eyebrow">MIÉRCOLES, 15 DE JULIO DE 2026</p><h1>Centro de observación</h1><p className="intro-copy">Una vista clara de las señales ciudadanas que requieren atención en Manta.</p></div><button className="secondary-button"><FileText size={16} /> Exportar informe</button></section>
-          <section className="metric-grid"><MetricCard label="Reportes recibidos" value="24" detail="+6 esta semana" tone="blue" icon={FileText} /><MetricCard label="Requieren atención" value="8" detail="2 críticos" tone="red" icon={Bell} /><MetricCard label="En seguimiento" value="11" detail="46% del total" tone="amber" icon={ClipboardCheck} /><MetricCard label="Resueltos" value="5" detail="+2 esta semana" tone="green" icon={ShieldCheck} /></section>
-          <section className="workspace-grid"><MapPanel selected={selected} onSelect={setSelected} /><section className="panel insight-panel"><div className="panel-heading"><div><p className="eyebrow">LECTURA DEL SISTEMA</p><h2>Señales destacadas</h2></div><Sparkles size={18} className="sparkle" /></div><div className="insight-main"><div className="insight-number">4<span> zonas</span></div><p>con concentración de reportes en las últimas 24 horas</p></div><div className="zone-list"><div><span className="zone-color red" /><strong>Centro de Manta</strong><span>8 reportes</span></div><div><span className="zone-color orange" /><strong>Playa Murciélago</strong><span>6 reportes</span></div><div><span className="zone-color yellow" /><strong>Tarqui</strong><span>4 reportes</span></div></div><button className="text-button">Ver análisis territorial <ArrowUpRight size={15} /></button></section></section>
-          <section className="panel reports-panel"><div className="panel-heading reports-heading"><div><p className="eyebrow">BANDEJA DE MODERACIÓN</p><h2>Reportes recientes <span>24</span></h2></div><button className="secondary-button compact"><Filter size={15} /> Filtros <span className="filter-count">2</span></button></div><div className="table-toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar por ID, zona o categoría" value={query} onChange={(event) => setQuery(event.target.value)} /></div><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filtrar por estado"><option>Todos los estados</option><option>Pendiente</option><option>En revisión</option><option>Escalado</option><option>Resuelto</option></select></div><div className="table-wrap"><table><thead><tr><th>Reporte</th><th>Zona</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Recibido</th><th /></tr></thead><tbody>{filteredReports.map((report) => <tr key={report.id} className={selected?.id === report.id ? "row-selected" : ""} onClick={() => setSelected(report)}><td><div className="report-cell"><strong>{report.id}</strong><span>{report.title}</span></div></td><td>{report.zone}</td><td>{report.category}</td><td><Pill className={priorityStyles[report.priority]}>{report.priority}</Pill></td><td><Pill className={statusStyles[report.status]}><i />{report.status}</Pill></td><td>{report.age}</td><td><button className="row-menu" aria-label={`Opciones de ${report.id}`}><MoreHorizontal size={17} /></button></td></tr>)}</tbody></table></div>{filteredReports.length === 0 && <div className="empty-state">No hay reportes que coincidan con los filtros.</div>}<div className="table-footer"><span>Mostrando {filteredReports.length} de 24 reportes</span><button className="text-button">Ver todos <ArrowUpRight size={15} /></button></div></section>
-          <footer className="footer-note"><ShieldCheck size={14} /> Las clasificaciones de IA son sugerencias para revisión humana. ROMA no emite alertas oficiales.</footer>
-        </div>
-      </main>
-      {selected && <ReportDetail report={selected} onClose={() => setSelected(undefined)} />}
-    </div>
-  );
+  return <div className="terminal-app">
+    <header className="terminal-topbar"><div className="topbar-brand"><strong>ROMA</strong><span className="topbar-mobile-label">/ OPS</span></div><nav className="topbar-nav"><button className="active">DASHBOARD</button><button>REPORTS</button><button>MAP</button></nav><div className="topbar-actions"><span className="online-dot" /> <span className="topbar-system">SYSTEM READY</span><button className="terminal-icon" aria-label="Privacidad activa" title="Privacidad activa"><ShieldCheck size={18} /></button><button className="terminal-icon" aria-label="Señales en tiempo real" title="Señales en tiempo real"><Radio size={18} /></button><div className="moderator-avatar">MV</div></div><button className="terminal-icon mobile-menu" onClick={() => setMobileNav(true)} aria-label="Abrir menú"><Menu size={19} /></button></header>
+    <aside className={`terminal-sidebar ${mobileNav ? "open" : ""}`}><div className="sidebar-head"><strong>ROMA OPS</strong><span>v1.0.4 / STABLE</span><button className="terminal-icon mobile-close" onClick={() => setMobileNav(false)} aria-label="Cerrar menú"><X size={17} /></button></div><nav className="sidebar-nav" aria-label="Navegación operativa"><button className="active"><Activity size={18} /> <span>DASHBOARD</span></button><button><BarChart3 size={18} /> <span>REPORTS</span><em>24</em></button><button><Map size={18} /> <span>TERRITORY</span></button><button><CheckSquare size={18} /> <span>FOLLOW-UP</span><em>8</em></button></nav><div className="sidebar-bottom"><div className="system-ready"><i /> SYSTEM READY</div><div className="sidebar-version">MANTA NODE / LOCAL OPERATION</div></div></aside>
+    <main className="terminal-main"><MapSurface selected={selected} onSelect={setSelected} /><div className="privacy-badge"><ShieldCheck size={18} /><div><span>ANONYMOUS-ROMA</span><strong>ACTIVE SESSION</strong></div></div><section className="metrics-module"><div className="module-header"><span>SYSTEM METRICS</span><BarChart3 size={15} /></div><div className="metric-cells"><div><span>RECEIVED</span><strong>1,204</strong></div><div className="urgent"><span>URGENT</span><strong>12</strong></div><div><span>IN PROGRESS</span><strong>42</strong></div><div><span>RESOLVED</span><strong>856</strong></div></div></section><div className="territory-log"><span><i /> LOG_SESSION_STREAMING</span><p>&gt; PINGING ROMA_NODES... OK<br />&gt; ENCRYPTING FEED_0x442... OK<br />&gt; LOCALIZING 42 ACTIVE TASKS...<br />&gt; MODERATOR_ID: 9942 ACTIVE<br /><b>_</b></p></div><section className="signal-feed"><div className="module-header"><span>REAL-TIME SIGNAL FEED</span><Radio size={15} /></div><div className="feed-toolbar"><div className="feed-search"><Search size={14} /><input placeholder="FILTER SIGNALS" value={query} onChange={(event) => setQuery(event.target.value)} /></div><button className="terminal-icon" aria-label="Filtrar señales" title="Filtrar señales"><Filter size={15} /></button></div><div className="feed-list">{filtered.map((report) => <FeedCard key={report.id} report={report} selected={selected?.id === report.id} onSelect={() => setSelected(report)} />)}{filtered.length === 0 && <div className="feed-empty">NO SIGNALS MATCH FILTER</div>}</div><div className="feed-actions"><button className="terminal-action"><Edit3 size={15} /> MANUAL LOG ENTRY</button><button className="terminal-action"><Download size={15} /> EXPORT TERRITORY DATA</button></div></section><footer className="terminal-footer">AI CLASSIFICATION IS A HUMAN-REVIEW SUGGESTION · ROMA DOES NOT ISSUE OFFICIAL ALERTS</footer></main>
+    {selected && <DetailPanel report={selected} onClose={() => setSelected(undefined)} />}
+  </div>;
 }
