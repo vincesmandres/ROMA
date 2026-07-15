@@ -137,3 +137,18 @@ export function telegramConfirmation(report: TelegramReport, id: string | null):
     id ? `Código: ${id}` : "Código: generado",
   ].join("\n");
 }
+
+export function telegramHelpMessage(): string {
+  return [
+    "Bienvenido a ROMA.",
+    "Reporta una situacion de Manta sin compartir datos personales.",
+    "",
+    "Usa este formato:",
+    "/reportar zona | descripcion | urgencia",
+    "",
+    "Ejemplo:",
+    "/reportar Tarqui | Fuga de agua en la calle principal | alta",
+    "",
+    "Urgencias: baja, media, alta o critica.",
+  ].join("\n");
+}

@@ -5,6 +5,7 @@ import {
   persistTelegramReport,
   sendTelegramConfirmation,
   telegramConfirmation,
+  telegramHelpMessage,
   type TelegramUpdate,
 } from "@/lib/telegram";
 
@@ -33,6 +34,15 @@ export async function POST(request: Request) {
   if (!report) {
     if (!process.env.TELEGRAM_BOT_TOKEN?.trim()) {
       return jsonError("TELEGRAM_NOT_CONFIGURED", "TELEGRAM_BOT_TOKEN no está configurado en el servidor.", 503);
+    }
+    const chatId = update.message.chat?.id;
+    if (typeof chatId === "string" || typeof chatId === "number") {
+      try {
+        await sendTelegramConfirmation(String(chatId), telegramHelpMessage());
+        return NextResponse.json({ ok: true, guided: true });
+      } catch {
+        return jsonError("TELEGRAM_SEND_FAILED", "Telegram no pudo enviar la ayuda del bot.", 502);
+      }
     }
     return NextResponse.json({ ok: true, ignored: true });
   }

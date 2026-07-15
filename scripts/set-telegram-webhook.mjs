@@ -20,3 +20,23 @@ if (!response.ok || !payload.ok) {
 }
 
 console.log(`Webhook configurado: ${baseUrl}/api/telegram/webhook`);
+
+const commandsResponse = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    commands: [
+      { command: "start", description: "Abrir ROMA y ver instrucciones" },
+      { command: "reportar", description: "Enviar un reporte ciudadano" },
+      { command: "help", description: "Ver el formato del reporte" },
+    ],
+  }),
+});
+
+const commandsPayload = await commandsResponse.json();
+if (!commandsResponse.ok || !commandsPayload.ok) {
+  console.error("Telegram rechazo el registro de comandos.");
+  process.exit(1);
+}
+
+console.log("Comandos de Telegram registrados.");
