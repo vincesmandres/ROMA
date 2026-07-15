@@ -132,6 +132,7 @@ export async function POST(request: Request) {
   const row = {
     source: input.source,
     title: `${input.reportedCategory ?? "Reporte ciudadano"} - ${input.zone}`.slice(0, 160),
+    description: redactedText,
     zone: input.zone,
     text_redacted: redactedText,
     category: input.reportedCategory ?? null,
