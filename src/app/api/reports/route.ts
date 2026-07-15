@@ -29,7 +29,7 @@ type PersistedReport = {
   created_at: string;
 };
 
-const reportsSelect = "id,reference_code,title,category,priority,status,zone,latitude,longitude,source,created_at,summary,risks,confidence,report_analysis(summary,risks,confidence)";
+const reportsSelect = "id,reference_code,title,category,priority,status,zone,latitude,longitude,source,created_at,summary,risks,confidence,whatsapp_message,report_analysis(summary,risks,confidence)";
 
 export async function GET() {
   if (!isSupabaseServerConfigured()) {

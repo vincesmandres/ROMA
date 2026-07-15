@@ -51,7 +51,9 @@ function mapCoordinates(latitude: number | null, longitude: number | null) {
 
 export function mapReport(row: ReportRow): Report {
   const analysis = row.report_analysis?.[0];
-  const source = row.source === "telegram" ? "Telegram" : row.source === "whatsapp" ? "WhatsApp" : "Web";
+  const source = row.source === "telegram" || row.whatsapp_message === "source:telegram"
+    ? "Telegram"
+    : row.source === "whatsapp" ? "WhatsApp" : "Web";
   return {
     id: row.reference_code,
     title: row.title,

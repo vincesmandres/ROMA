@@ -32,6 +32,7 @@ export type ReportRow = {
   summary: string | null;
   risks: unknown;
   confidence: number | null;
+  whatsapp_message: string | null;
   report_analysis: Array<{
     summary: string | null;
     risks: unknown;

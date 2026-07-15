@@ -53,17 +53,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, ignored: true });
   }
 
+  let persisted: Awaited<ReturnType<typeof persistTelegramReport>>;
   try {
-    const persisted = await persistTelegramReport(report);
-    await sendTelegramConfirmation(report.chatId, telegramConfirmation(report, persisted.id));
-    return NextResponse.json({ ok: true, report_id: persisted.id, report_hash: persisted.reportHash });
+    persisted = await persistTelegramReport(report);
   } catch (error) {
     if (error instanceof Error && error.message === "SUPABASE_NOT_CONFIGURED") {
       return jsonError("SUPABASE_NOT_CONFIGURED", "Supabase no está configurado para persistir reportes de Telegram.", 503);
     }
-    if (error instanceof Error && error.message === "TELEGRAM_SEND_FAILED") {
-      return jsonError("TELEGRAM_CONFIRMATION_FAILED", "El reporte se guardó, pero Telegram no pudo enviar la confirmación.", 502);
+    console.error("Telegram report persistence failed");
+    try {
+      await sendTelegramConfirmation(report.chatId, "No pude registrar ese mensaje. Intenta nuevamente indicando qué ocurre y en qué zona de Manta.");
+    } catch {
+      // Telegram will receive 200 to prevent an incompatible update from blocking the queue.
     }
-    return jsonError("REPORT_PERSISTENCE_FAILED", "No fue posible guardar el reporte en ROMA.", 502);
+    return NextResponse.json({ ok: true, guided: true, report_error: true });
   }
+
+  try {
+    await sendTelegramConfirmation(report.chatId, telegramConfirmation(report, persisted.id));
+  } catch {
+    return NextResponse.json({ ok: true, report_id: persisted.id, report_hash: persisted.reportHash, confirmation_sent: false });
+  }
+
+  return NextResponse.json({ ok: true, report_id: persisted.id, report_hash: persisted.reportHash, confirmation_sent: true });
 }
