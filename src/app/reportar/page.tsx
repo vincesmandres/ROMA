@@ -99,7 +99,10 @@ export default function ReportarPage() {
       <div className={styles.shell}>
         <header className={styles.topbar}>
           <div className={styles.brand}>ROMA <span>/ CIUDADANO</span></div>
-          <Link className={styles.backLink} href="/">← VOLVER AL PANEL</Link>
+          <div className={styles.topLinks}>
+            <a className={styles.telegramLink} href="https://t.me/RomaReporteBot" target="_blank" rel="noreferrer">ABRIR TELEGRAM</a>
+            <Link className={styles.backLink} href="/">← VOLVER AL PANEL</Link>
+          </div>
         </header>
 
         <section className={styles.intro}>
@@ -158,7 +161,7 @@ export default function ReportarPage() {
           <aside className={styles.side}>
             {submitted ? <div className={styles.success} role="status"><Check size={20} aria-hidden="true" /><div><strong>SEÑAL REGISTRADA</strong><p>El reporte fue validado, redactado y enviado al flujo de revisión de ROMA.</p><code>{reportId}</code></div></div> : null}
             <section className={`${styles.panel} ${styles.sidePanel}`}><h2>ANTES DE ENVIAR</h2><ul><li><span>01</span><div>Cuenta lo observable: qué ocurre, dónde y desde cuándo.</div></li><li><span>02</span><div>Elige una urgencia según el posible impacto, no según la identidad de quien reporta.</div></li><li><span>03</span><div>ROMA organizará la señal para que una persona pueda revisarla.</div></li></ul></section>
-            <section className={`${styles.panel} ${styles.sidePanel} ${styles.demoNote}`}><h2><CircleHelp size={14} aria-hidden="true" /> MODO PROTOTIPO</h2><p className={styles.fieldHint}>El envío actual no sale de este navegador ni crea un registro remoto. Es una prueba de UX del flujo ciudadano.</p></section>
+            <section className={`${styles.panel} ${styles.sidePanel} ${styles.demoNote}`}><h2><CircleHelp size={14} aria-hidden="true" /> CANALES ACTIVOS</h2><p className={styles.fieldHint}>Envía desde esta página o usa <a href="https://t.me/RomaReporteBot" target="_blank" rel="noreferrer">@RomaReporteBot</a> con: /reportar zona | descripción | urgencia.</p></section>
             <section className={`${styles.panel} ${styles.sidePanel}`}><h2><LockKeyhole size={14} aria-hidden="true" /> DATOS QUE NO PEDIMOS</h2><p className={styles.fieldHint}>Nombre · teléfono · cédula · dirección exacta · cuenta de usuario.</p></section>
           </aside>
         </div>

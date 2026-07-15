@@ -55,6 +55,22 @@
 
 .backLink:hover { text-decoration: underline; }
 
+.topLinks {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.telegramLink {
+  border: 1px solid #b4c5ff;
+  color: #e0e3e5;
+  padding: 8px 10px;
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.telegramLink:hover { background: #b4c5ff; color: #101415; }
+
 .intro {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
@@ -207,6 +223,7 @@
 
 @media (max-width: 440px) {
   .topbar { align-items: flex-start; }
+  .topLinks { flex-direction: column; align-items: flex-end; gap: 10px; }
   .backLink { max-width: 105px; text-align: right; line-height: 1.4; }
   .formBody { padding: 16px; }
   .urgencyGroup { grid-template-columns: repeat(2, 1fr); }
