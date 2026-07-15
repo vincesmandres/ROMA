@@ -11,7 +11,8 @@
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
     "supabase:push": "supabase db push",
-    "supabase:types": "supabase gen types typescript --local > src/lib/database.types.ts"
+    "supabase:types": "supabase gen types typescript --local > src/lib/database.types.ts",
+    "telegram:webhook": "node --env-file=.env.local scripts/set-telegram-webhook.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
