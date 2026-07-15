@@ -32,8 +32,10 @@ export default function ReportarPage() {
   const [shareLocation, setShareLocation] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [reportId, setReportId] = useState("");
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const cleanZone = zone.trim();
     const cleanDescription = description.trim();
@@ -48,7 +50,31 @@ export default function ReportarPage() {
     }
 
     setError("");
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          zone: cleanZone,
+          text: cleanDescription,
+          source: "web_form",
+          ...(category ? { reportedCategory: category } : {}),
+          ...(urgency ? { perceivedUrgency: urgency } : {}),
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setError(payload?.error?.message ?? "No se pudo guardar la señal. Intenta nuevamente.");
+        return;
+      }
+      setReportId(payload?.report?.id ?? `DEMO-RM-${String(zone.length + description.length).padStart(4, "0")}`);
+      setSubmitted(true);
+    } catch {
+      setError("No fue posible conectar con el servidor. Intenta nuevamente.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -108,12 +134,12 @@ export default function ReportarPage() {
 
               {error && <p className={styles.error} role="alert">{error}</p>}
               <div className={styles.privacy}><ShieldCheck size={19} aria-hidden="true" /><div><span className={styles.privacyLabel}>PRIVACIDAD COMO CONFIGURACIÓN BASE</span><p>Este prototipo no solicita nombre, teléfono, cédula ni login. La clasificación de IA será una sugerencia para revisión humana.</p></div></div>
-              <button className={styles.submit} type="submit"><Send size={15} aria-hidden="true" /> ENVIAR SEÑAL PRIVADA</button>
+              <button className={styles.submit} type="submit" disabled={submitting}><Send size={15} aria-hidden="true" /> {submitting ? "PROCESANDO..." : "ENVIAR SEÑAL PRIVADA"}</button>
             </form>
           </section>
 
           <aside className={styles.side}>
-            {submitted ? <div className={styles.success} role="status"><Check size={20} aria-hidden="true" /><div><strong>SEÑAL REGISTRADA EN MODO DEMO</strong><p>El formulario fue validado localmente. La conexión con Supabase y el análisis de IA se integrarán en el siguiente paso.</p><code>DEMO-RM-{String(zone.length + description.length).padStart(4, "0")}</code></div></div> : null}
+            {submitted ? <div className={styles.success} role="status"><Check size={20} aria-hidden="true" /><div><strong>SEÑAL REGISTRADA</strong><p>El reporte fue validado, redactado y enviado al flujo de revisión de ROMA.</p><code>{reportId}</code></div></div> : null}
             <section className={`${styles.panel} ${styles.sidePanel}`}><h2>ANTES DE ENVIAR</h2><ul><li><span>01</span><div>Cuenta lo observable: qué ocurre, dónde y desde cuándo.</div></li><li><span>02</span><div>Elige una urgencia según el posible impacto, no según la identidad de quien reporta.</div></li><li><span>03</span><div>ROMA organizará la señal para que una persona pueda revisarla.</div></li></ul></section>
             <section className={`${styles.panel} ${styles.sidePanel} ${styles.demoNote}`}><h2><CircleHelp size={14} aria-hidden="true" /> MODO PROTOTIPO</h2><p className={styles.fieldHint}>El envío actual no sale de este navegador ni crea un registro remoto. Es una prueba de UX del flujo ciudadano.</p></section>
             <section className={`${styles.panel} ${styles.sidePanel}`}><h2><LockKeyhole size={14} aria-hidden="true" /> DATOS QUE NO PEDIMOS</h2><p className={styles.fieldHint}>Nombre · teléfono · cédula · dirección exacta · cuenta de usuario.</p></section>
