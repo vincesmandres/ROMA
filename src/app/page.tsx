@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Activity,
   ArrowUpRight,
@@ -24,7 +24,8 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { reports, type Report, type ReportPriority, type ReportStatus } from "@/lib/demo-data";
+import type { Report, ReportPriority, ReportStatus } from "@/lib/reports/types";
+import { useReports } from "@/lib/reports/use-reports";
 
 const priorityStyles: Record<ReportPriority, string> = {
   Crítica: "priority-critical",
@@ -42,9 +43,9 @@ const statusStyles: Record<ReportStatus, string> = {
 
 const navItems = [
   { label: "Resumen", icon: Activity, active: true },
-  { label: "Reportes", icon: FileText, count: "24" },
+  { label: "Reportes", icon: FileText },
   { label: "Mapa territorial", icon: Map },
-  { label: "Seguimiento", icon: ClipboardCheck, count: "8" },
+  { label: "Seguimiento", icon: ClipboardCheck },
 ];
 
 function Pill({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -65,7 +66,7 @@ function MetricCard({ label, value, detail, tone, icon: Icon }: { label: string;
   );
 }
 
-function MapPanel({ selected, onSelect }: { selected: Report | undefined; onSelect: (report: Report) => void }) {
+function MapPanel({ reports, selected, onSelect }: { reports: Report[]; selected: Report | undefined; onSelect: (report: Report) => void }) {
   return (
     <section className="panel map-panel">
       <div className="panel-heading">
@@ -114,7 +115,7 @@ function ReportDetail({ report, onClose }: { report: Report; onClose: () => void
         <div className="detail-block"><span className="detail-label">Resumen de IA</span><p>{report.summary}</p></div>
         <div className="detail-grid"><div><span className="detail-label">Categoría</span><strong>{report.category}</strong></div><div><span className="detail-label">Origen</span><strong>{report.source}</strong></div></div>
         <div className="risk-callout"><ShieldCheck size={17} /><div><span className="detail-label">Riesgo identificado</span><p>{report.risk}</p></div></div>
-        <div className="confidence"><div><span>Confianza del análisis</span><strong>87%</strong></div><div className="progress"><i style={{ width: "87%" }} /></div></div>
+        <div className="confidence"><div><span>Confianza del análisis</span><strong>{report.confidence === null ? "Pendiente" : `${Math.round(report.confidence * 100)}%`}</strong></div><div className="progress"><i style={{ width: `${(report.confidence ?? 0) * 100}%` }} /></div></div>
         <div className="drawer-actions"><button className="primary-button"><ClipboardCheck size={16} /> Revisar reporte</button><button className="secondary-button"><MessageSquareText size={16} /> Generar brief</button></div>
       </div>
     </aside>
@@ -122,35 +123,50 @@ function ReportDetail({ report, onClose }: { report: Report; onClose: () => void
 }
 
 export default function Home() {
+  const { data, error, isLoading, mutate, isValidating } = useReports();
+  const reports = data?.reports ?? [];
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("Todos los estados");
-  const [selected, setSelected] = useState<Report | undefined>(reports[0]);
+  const [selectedId, setSelectedId] = useState<string>();
   const [mobileNav, setMobileNav] = useState(false);
-  const filteredReports = useMemo(() => reports.filter((report) => {
+  const selected = reports.find((report) => report.id === selectedId);
+  const selectReport = (report: Report) => setSelectedId(report.id);
+  const attentionCount = reports.filter((report) => report.priority === "Crítica" || report.status === "Escalado").length;
+  const followUpCount = reports.filter((report) => report.status === "En revisión" || report.status === "Escalado").length;
+  const resolvedCount = reports.filter((report) => report.status === "Resuelto").length;
+  const topZones = Object.entries(
+    reports.reduce<Record<string, number>>((zones, report) => {
+      zones[report.zone] = (zones[report.zone] ?? 0) + 1;
+      return zones;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const filteredReports = reports.filter((report) => {
     const matchesQuery = `${report.id} ${report.title} ${report.zone} ${report.category}`.toLowerCase().includes(query.toLowerCase());
     const matchesStatus = status === "Todos los estados" || report.status === status;
     return matchesQuery && matchesStatus;
-  }), [query, status]);
+  });
 
   return (
     <div className="roma-shell">
       <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
         <div className="brand"><div className="brand-mark">R</div><div><strong>ROMA</strong><span>inteligencia cívica</span></div><button className="icon-button mobile-close" onClick={() => setMobileNav(false)} aria-label="Cerrar menú"><X size={17} /></button></div>
         <div className="workspace-switch"><div className="workspace-avatar">M</div><div><strong>Operación Manta</strong><span>Espacio de trabajo</span></div><ChevronDown size={15} /></div>
-        <nav className="main-nav" aria-label="Navegación principal"><p className="nav-label">OPERACIÓN</p>{navItems.map(({ label, icon: Icon, active, count }) => <button className={`nav-item ${active ? "active" : ""}`} key={label}><Icon size={17} /><span>{label}</span>{count && <em>{count}</em>}</button>)}<p className="nav-label nav-spacer">GESTIÓN</p><button className="nav-item"><Users size={17} /><span>Comunidades</span></button><button className="nav-item"><Bot size={17} /><span>Automatizaciones</span><span className="soon">Pronto</span></button></nav>
+        <nav className="main-nav" aria-label="Navegación principal"><p className="nav-label">OPERACIÓN</p>{navItems.map(({ label, icon: Icon, active }) => <button className={`nav-item ${active ? "active" : ""}`} key={label}><Icon size={17} /><span>{label}</span></button>)}<p className="nav-label nav-spacer">GESTIÓN</p><button className="nav-item"><Users size={17} /><span>Comunidades</span></button><button className="nav-item"><Bot size={17} /><span>Automatizaciones</span><span className="soon">Pronto</span></button></nav>
         <div className="sidebar-bottom"><div className="privacy-note"><ShieldCheck size={17} /><div><strong>Privacidad activa</strong><span>Sin datos personales expuestos</span></div></div><button className="nav-item"><CircleHelp size={17} /><span>Centro de ayuda</span></button><div className="profile"><div className="profile-avatar">MV</div><div><strong>María V.</strong><span>Moderadora</span></div><MoreHorizontal size={17} /></div></div>
       </aside>
       <main className="main-content">
-        <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Abrir menú"><Menu size={19} /></button><div className="breadcrumb"><span>Operación Manta</span><span>/</span><strong>Resumen</strong></div><div className="top-actions"><span className="live-status"><i /> Sistema operativo</span><button className="icon-button" aria-label="Actualizar datos" title="Actualizar datos"><RefreshCw size={17} /></button><button className="icon-button notification" aria-label="Notificaciones" title="Notificaciones"><Bell size={17} /><i /></button></div></header>
+        <header className="topbar"><button className="icon-button mobile-menu" onClick={() => setMobileNav(true)} aria-label="Abrir menú"><Menu size={19} /></button><div className="breadcrumb"><span>Operación Manta</span><span>/</span><strong>Resumen</strong></div><div className="top-actions"><span className="live-status"><i /> Sistema operativo</span><button className="icon-button" onClick={() => void mutate()} disabled={isValidating} aria-label="Actualizar datos" title="Actualizar datos"><RefreshCw className={isValidating ? "spin" : ""} size={17} /></button><button className="icon-button notification" aria-label="Notificaciones" title="Notificaciones"><Bell size={17} /><i /></button></div></header>
         <div className="content-wrap">
           <section className="page-intro"><div><p className="eyebrow">MIÉRCOLES, 15 DE JULIO DE 2026</p><h1>Centro de observación</h1><p className="intro-copy">Una vista clara de las señales ciudadanas que requieren atención en Manta.</p></div><button className="secondary-button"><FileText size={16} /> Exportar informe</button></section>
-          <section className="metric-grid"><MetricCard label="Reportes recibidos" value="24" detail="+6 esta semana" tone="blue" icon={FileText} /><MetricCard label="Requieren atención" value="8" detail="2 críticos" tone="red" icon={Bell} /><MetricCard label="En seguimiento" value="11" detail="46% del total" tone="amber" icon={ClipboardCheck} /><MetricCard label="Resueltos" value="5" detail="+2 esta semana" tone="green" icon={ShieldCheck} /></section>
-          <section className="workspace-grid"><MapPanel selected={selected} onSelect={setSelected} /><section className="panel insight-panel"><div className="panel-heading"><div><p className="eyebrow">LECTURA DEL SISTEMA</p><h2>Señales destacadas</h2></div><Sparkles size={18} className="sparkle" /></div><div className="insight-main"><div className="insight-number">4<span> zonas</span></div><p>con concentración de reportes en las últimas 24 horas</p></div><div className="zone-list"><div><span className="zone-color red" /><strong>Centro de Manta</strong><span>8 reportes</span></div><div><span className="zone-color orange" /><strong>Playa Murciélago</strong><span>6 reportes</span></div><div><span className="zone-color yellow" /><strong>Tarqui</strong><span>4 reportes</span></div></div><button className="text-button">Ver análisis territorial <ArrowUpRight size={15} /></button></section></section>
-          <section className="panel reports-panel"><div className="panel-heading reports-heading"><div><p className="eyebrow">BANDEJA DE MODERACIÓN</p><h2>Reportes recientes <span>24</span></h2></div><button className="secondary-button compact"><Filter size={15} /> Filtros <span className="filter-count">2</span></button></div><div className="table-toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar por ID, zona o categoría" value={query} onChange={(event) => setQuery(event.target.value)} /></div><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filtrar por estado"><option>Todos los estados</option><option>Pendiente</option><option>En revisión</option><option>Escalado</option><option>Resuelto</option></select></div><div className="table-wrap"><table><thead><tr><th>Reporte</th><th>Zona</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Recibido</th><th /></tr></thead><tbody>{filteredReports.map((report) => <tr key={report.id} className={selected?.id === report.id ? "row-selected" : ""} onClick={() => setSelected(report)}><td><div className="report-cell"><strong>{report.id}</strong><span>{report.title}</span></div></td><td>{report.zone}</td><td>{report.category}</td><td><Pill className={priorityStyles[report.priority]}>{report.priority}</Pill></td><td><Pill className={statusStyles[report.status]}><i />{report.status}</Pill></td><td>{report.age}</td><td><button className="row-menu" aria-label={`Opciones de ${report.id}`}><MoreHorizontal size={17} /></button></td></tr>)}</tbody></table></div>{filteredReports.length === 0 && <div className="empty-state">No hay reportes que coincidan con los filtros.</div>}<div className="table-footer"><span>Mostrando {filteredReports.length} de 24 reportes</span><button className="text-button">Ver todos <ArrowUpRight size={15} /></button></div></section>
+          <section className="metric-grid"><MetricCard label="Reportes recibidos" value={String(reports.length)} detail={data?.mode === "demo" ? "Datos demo locales" : "Fuente: Supabase"} tone="blue" icon={FileText} /><MetricCard label="Requieren atención" value={String(attentionCount)} detail="Críticos o escalados" tone="red" icon={Bell} /><MetricCard label="En seguimiento" value={String(followUpCount)} detail={reports.length ? `${Math.round((followUpCount / reports.length) * 100)}% del total` : "Sin actividad"} tone="amber" icon={ClipboardCheck} /><MetricCard label="Resueltos" value={String(resolvedCount)} detail="Con cierre registrado" tone="green" icon={ShieldCheck} /></section>
+          {error && <div className="data-state error-state" role="alert"><strong>No se pudieron cargar los reportes.</strong><button className="text-button" onClick={() => void mutate()}>Reintentar</button></div>}
+          {isLoading && <div className="data-state" role="status">Cargando reportes seguros desde Supabase…</div>}
+          <section className="workspace-grid"><MapPanel reports={reports} selected={selected} onSelect={selectReport} /><section className="panel insight-panel"><div className="panel-heading"><div><p className="eyebrow">LECTURA DEL SISTEMA</p><h2>Señales destacadas</h2></div><Sparkles size={18} className="sparkle" /></div><div className="insight-main"><div className="insight-number">{topZones.length}<span> zonas</span></div><p>{topZones.length ? "con concentración de reportes en la consulta actual" : "sin señales visibles con el acceso actual"}</p></div><div className="zone-list">{topZones.map(([zone, count], index) => <div key={zone}><span className={`zone-color ${["red", "orange", "yellow"][index]}`} /><strong>{zone}</strong><span>{count} {count === 1 ? "reporte" : "reportes"}</span></div>)}</div><button className="text-button">Ver análisis territorial <ArrowUpRight size={15} /></button></section></section>
+          <section className="panel reports-panel"><div className="panel-heading reports-heading"><div><p className="eyebrow">BANDEJA DE MODERACIÓN</p><h2>Reportes recientes <span>{reports.length}</span></h2></div><button className="secondary-button compact"><Filter size={15} /> Filtros <span className="filter-count">2</span></button></div><div className="table-toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar por ID, zona o categoría" value={query} onChange={(event) => setQuery(event.target.value)} /></div><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filtrar por estado"><option>Todos los estados</option><option>Pendiente</option><option>En revisión</option><option>Escalado</option><option>Resuelto</option></select></div><div className="table-wrap"><table><thead><tr><th>Reporte</th><th>Zona</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Recibido</th><th /></tr></thead><tbody>{filteredReports.map((report) => <tr key={report.id} className={selected?.id === report.id ? "row-selected" : ""} onClick={() => selectReport(report)}><td><div className="report-cell"><strong>{report.id}</strong><span>{report.title}</span></div></td><td>{report.zone}</td><td>{report.category}</td><td><Pill className={priorityStyles[report.priority]}>{report.priority}</Pill></td><td><Pill className={statusStyles[report.status]}><i />{report.status}</Pill></td><td>{report.age}</td><td><button className="row-menu" aria-label={`Opciones de ${report.id}`}><MoreHorizontal size={17} /></button></td></tr>)}</tbody></table></div>{filteredReports.length === 0 && <div className="empty-state">{reports.length === 0 ? "No hay reportes visibles. El acceso permanecerá cerrado hasta incorporar autenticación de moderadores." : "No hay reportes que coincidan con los filtros."}</div>}<div className="table-footer"><span>Mostrando {filteredReports.length} de {reports.length} reportes</span><button className="text-button">Ver todos <ArrowUpRight size={15} /></button></div></section>
           <footer className="footer-note"><ShieldCheck size={14} /> Las clasificaciones de IA son sugerencias para revisión humana. ROMA no emite alertas oficiales.</footer>
         </div>
       </main>
-      {selected && <ReportDetail report={selected} onClose={() => setSelected(undefined)} />}
+      {selected && <ReportDetail report={selected} onClose={() => setSelectedId(undefined)} />}
     </div>
   );
 }

@@ -1,20 +1,6 @@
-export type ReportStatus = "Pendiente" | "En revisión" | "Escalado" | "Resuelto";
-export type ReportPriority = "Crítica" | "Alta" | "Media" | "Baja";
+import type { Report } from "@/lib/reports/types";
 
-export type Report = {
-  id: string;
-  title: string;
-  zone: string;
-  category: string;
-  priority: ReportPriority;
-  status: ReportStatus;
-  createdAt: string;
-  age: string;
-  summary: string;
-  risk: string;
-  source: "Web" | "WhatsApp";
-  coordinates: { x: number; y: number };
-};
+export type { Report, ReportPriority, ReportStatus } from "@/lib/reports/types";
 
 export const reports: Report[] = [
   {
@@ -28,6 +14,7 @@ export const reports: Report[] = [
     age: "hace 18 min",
     summary: "Se reportan bolsas y residuos acumulados desde ayer cerca del acceso principal de la playa.",
     risk: "Salud pública y afectación al turismo",
+    confidence: 0.87,
     source: "WhatsApp",
     coordinates: { x: 70, y: 39 },
   },
@@ -42,6 +29,7 @@ export const reports: Report[] = [
     age: "hace 1 h",
     summary: "Pérdida constante de agua sobre la calzada, con riesgo de deterioro de la vía.",
     risk: "Desperdicio de agua y daño de infraestructura",
+    confidence: 0.87,
     source: "Web",
     coordinates: { x: 48, y: 49 },
   },
@@ -56,6 +44,7 @@ export const reports: Report[] = [
     age: "hace 2 h",
     summary: "La rampa de acceso permanece bloqueada y no permite el paso de sillas de ruedas.",
     risk: "Barreras de movilidad y acceso desigual",
+    confidence: 0.87,
     source: "WhatsApp",
     coordinates: { x: 35, y: 56 },
   },
@@ -70,6 +59,7 @@ export const reports: Report[] = [
     age: "hace 2 h",
     summary: "Bache de gran tamaño en una vía de alto tránsito local, reportado por varios vecinos.",
     risk: "Accidentes y daño vehicular",
+    confidence: 0.87,
     source: "Web",
     coordinates: { x: 24, y: 71 },
   },
@@ -84,6 +74,7 @@ export const reports: Report[] = [
     age: "ayer",
     summary: "Se identificó un olor inusual en un punto cercano al estero durante la tarde.",
     risk: "Posible afectación ambiental",
+    confidence: 0.87,
     source: "WhatsApp",
     coordinates: { x: 83, y: 68 },
   },

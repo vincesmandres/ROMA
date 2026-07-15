@@ -1,72 +1,50 @@
-# ROMA: configuración y siguientes pasos
+# ROMA: configuración y operación
 
 ## Estado actual
 
-El dashboard funciona con datos demo y no necesita credenciales externas. La interfaz ya está preparada para reemplazar el origen local por Supabase.
+ROMA usa el proyecto Supabase conectado como fuente principal del dashboard. La migración `supabase/migrations/0001_initial_roma_schema.sql` crea `reports`, `report_analysis`, `briefs`, `follow_up_events`, `moderator_actions` y `whatsapp_identity_vault`, junto con sus restricciones e índices.
 
-## Lo que debes conseguir
+Todas las tablas tienen Row Level Security habilitado y no conceden acceso a `anon` ni `authenticated`. Hasta incorporar autenticación de moderadores, producción muestra un estado vacío seguro. En desarrollo, los datos demo solo se usan si faltan por completo las variables públicas de Supabase.
 
-### 1. Supabase
+## Variables de entorno
 
-- Crear un proyecto en Supabase.
-- Guardar la URL del proyecto.
-- Guardar la publishable key.
-- Crear después las tablas `reports`, `report_analysis`, `briefs` y `follow_up_events`.
-- Mantener activado Row Level Security en las tablas expuestas.
+La integración de Supabase en Vercel configura estas variables para Production, Preview y Development:
 
-Supabase será la fuente principal de datos, el almacenamiento de archivos, los eventos en tiempo real y las Edge Functions para webhooks.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (preferida)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (compatibilidad)
 
-### 2. OpenAI
+El navegador nunca usa `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEY` ni credenciales de Postgres. Las claves de OpenAI y WhatsApp también deben permanecer exclusivamente en servidor o Edge Functions.
 
-- Crear una API key.
-- Elegir el modelo disponible para salida JSON estructurada.
-- Definir un límite de gasto para el MVP.
+Para desarrollo fuera de v0, copia `.env.example` a `.env.local` y completa solo los valores necesarios. Nunca confirmes `.env.local` en Git.
 
-La key debe vivir únicamente en servidor o Edge Functions. Nunca debe exponerse al navegador.
+## Modelo de privacidad
 
-### 3. WhatsApp Cloud API
+- `reports` no almacena nombre, teléfono ni identificadores directos del remitente.
+- `whatsapp_identity_vault` mantiene la identidad cifrada y aislada del reporte cívico.
+- La ubicación es voluntaria; se admite geohash o coordenadas aproximadas.
+- Las clasificaciones de IA son sugerencias y requieren revisión humana.
+- ROMA no emite alertas oficiales.
 
-- Crear una aplicación en Meta for Developers.
-- Configurar una cuenta de WhatsApp Business.
-- Registrar un número de prueba o producción.
-- Obtener `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` y `WHATSAPP_BUSINESS_ACCOUNT_ID`.
-- Definir un `WHATSAPP_VERIFY_TOKEN` propio.
-- Configurar un webhook HTTPS para mensajes entrantes.
+## Desbloquear acceso de moderadores
 
-El primer flujo aceptará texto y ubicación compartida voluntariamente. El número del remitente se tratará como dato sensible y se mantendrá separado del reporte público.
+El siguiente paso es incorporar Clerk y verificar su JWT en Supabase. Después se deben crear políticas RLS explícitas para el rol de moderador, con privilegios mínimos por operación, y registrar cada acción en `moderator_actions`. No abras políticas públicas temporales para visualizar reportes.
 
-### 4. Semaphore
+## Verificación
 
-- Crear una estrategia para registrar miembros elegibles del grupo.
-- Definir si el grupo será solo de demo o tendrá una autoridad comunitaria real.
-- Elegir la red de prueba si se usa anclaje on-chain.
-- Guardar únicamente el identificador de grupo en configuración.
+Antes de desplegar o fusionar cambios:
 
-Semaphore probará pertenencia y evitará doble señalización; no probará que un reporte sea verdadero ni que la ubicación sea correcta.
+1. Ejecuta `npm run lint`.
+2. Ejecuta `npm run build`.
+3. Comprueba que las variables públicas estén presentes en los tres entornos de Vercel.
+4. Revisa los asesores de seguridad y rendimiento de Supabase.
+5. Verifica en el navegador la carga, el estado vacío, los filtros y el reintento.
 
-### 5. Mapas
+## Próximas integraciones
 
-- Elegir un proveedor de tiles para producción.
-- Configurar una URL de estilo en `NEXT_PUBLIC_MAP_STYLE_URL`.
-- Mostrar atribución de OpenStreetMap cuando se use información OSM.
-- Usar geocodificación con caché y límites respetuosos.
-
-Para la demo inicial, el mapa mostrado es visual y usa coordenadas de ejemplo. No representa una integración real de ubicación.
-
-## Copiar configuración
-
-```powershell
-Copy-Item .env.example .env.local
-```
-
-No subas `.env.local` al repositorio.
-
-## Orden de integración
-
-1. Conectar el dashboard a una consulta de Supabase.
-2. Añadir políticas RLS y roles de moderador.
-3. Implementar análisis de reportes con OpenAI.
-4. Crear el webhook de WhatsApp en una Edge Function.
-5. Persistir zonas aproximadas y eventos de seguimiento.
-6. Añadir Semaphore para señales anónimas y nullifiers.
-7. Reemplazar el mapa demo por una capa cartográfica real.
+1. Añadir Clerk y políticas RLS de moderador.
+2. Implementar análisis estructurado en una función de servidor.
+3. Crear el webhook de WhatsApp en una Edge Function.
+4. Persistir eventos de seguimiento y briefs.
+5. Añadir Semaphore para señales anónimas y nullifiers.
+6. Reemplazar el mapa demostrativo por una capa cartográfica real.
